@@ -4,6 +4,7 @@ A decorator used to create [workers](/guide/workers).
 
 from __future__ import annotations
 
+import reprlib
 from functools import partial, wraps
 from inspect import iscoroutinefunction
 from typing import TYPE_CHECKING, Callable, Coroutine, TypeVar, Union, cast, overload
@@ -17,6 +18,23 @@ if TYPE_CHECKING:
 FactoryParamSpec = ParamSpec("FactoryParamSpec")
 DecoratorParamSpec = ParamSpec("DecoratorParamSpec")
 ReturnType = TypeVar("ReturnType")
+
+_description_repr = reprlib.Repr()
+"""Builds a *bounded* `repr` of worker arguments for the default description.
+
+Unlike the builtin `repr`, this doesn't build a full string for a very large argument
+(which can take tens of milliseconds), because the result is truncated by `Worker` anyway.
+"""
+_description_repr.maxstring = 200
+_description_repr.maxother = 200
+_description_repr.maxlong = 200
+_description_repr.maxlist = 20
+_description_repr.maxtuple = 20
+_description_repr.maxset = 20
+_description_repr.maxfrozenset = 20
+_description_repr.maxdeque = 20
+_description_repr.maxarray = 20
+_description_repr.maxdict = 20
 
 Decorator: TypeAlias = Callable[
     [
@@ -128,9 +146,12 @@ def work(
                 debug_description = description
             else:
                 try:
-                    positional_arguments = ", ".join(repr(arg) for arg in args[1:])
+                    positional_arguments = ", ".join(
+                        _description_repr.repr(arg) for arg in args[1:]
+                    )
                     keyword_arguments = ", ".join(
-                        f"{name}={value!r}" for name, value in kwargs.items()
+                        f"{name}={_description_repr.repr(value)}"
+                        for name, value in kwargs.items()
                     )
                     tokens = [positional_arguments, keyword_arguments]
                     debug_description = f"{method.__name__}({', '.join(token for token in tokens if token)})"

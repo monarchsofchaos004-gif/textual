@@ -184,3 +184,24 @@ async def test_calling_workers_from_within_workers(call_stack: Tuple[str]):
         for _ in range(len(call_stack)):
             await app.workers.wait_for_complete()
         assert app.call_stack == []
+
+
+async def test_default_description_is_bounded() -> None:
+    """The default description shouldn't build a full repr of huge arguments."""
+
+    class DescriptionApp(App[None]):
+        @work
+        async def do_work(self, payload: str, *, other: list[int]) -> None:
+            pass
+
+    app = DescriptionApp()
+    async with app.run_test():
+        worker = app.do_work("line of output\n" * 300_000, other=list(range(1000)))
+        await worker.wait()
+        assert worker.description.startswith("do_work('line of")
+        assert len(worker.description) < 1100
+        assert "..." in worker.description
+        # Short arguments are unaffected
+        worker = app.do_work("foo", other=[1, 2])
+        await worker.wait()
+        assert worker.description == "do_work('foo', other=[1, 2])"

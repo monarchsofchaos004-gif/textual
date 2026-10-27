@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+
+### Fixed
+
+- Fixed default `@work` description building a full `repr()` of very large arguments https://github.com/Textualize/textual/issues/6749
+
 ## [8.2.8] - 2026-06-30
 
 ### Fixed
